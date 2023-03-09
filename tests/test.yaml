@@ -1,0 +1,63 @@
+basic:
+  name:
+    required:
+    max:
+      val: 60
+
+  email:
+    required:
+    max:
+      val: 100
+    email:
+
+register:
+  name:
+    required:
+    max:
+      val: 60
+
+  email:
+    required:
+    max:
+      val: 100
+    email:
+
+  address: address
+
+address:
+  strasse:
+    required: Bitte geben Sie Ihre Straße ein.
+    format:
+      regex: ^[-.A-Za-z\d\s{{diacritical}}]+$
+      msg: Ihre Straße darf nur aus Groß- sowie Kleinbuchstaben, Bindenstrichen und Punkten bestehen.
+    max:
+      val: 25
+      msg: Ihre Straße ist zu lang (max. 25 Zeichen).
+  hnr:
+    required: Bitte geben Sie Ihre Hausnummer ein.
+    format:
+      regex: ^[-A-Za-z\d\s]{1,3}$
+      msg: Ihre Hausnummer darf nur aus mind. 1 Zeichen und max. 3 Zeichen bestehen.
+    max:
+      val: 4
+      msg: Ihre Hausnummer ist zu lang (max. 4 Zeichen).
+  plz:
+    required: Bitte geben Sie Ihre Postleitzahl ein.
+    plz:
+      msg: Ihre Postleizahl ist ungültig. Diese kann nur aus genau 5 Ziffern bestehen.
+      js: off
+      bail: 1
+    plzcheck:
+      msg-invalid: Ihre Postleitzahl existiert nicht.
+      msg-postfach: "Postfach-Adressen können nicht hinterlegt werden."
+    max:
+      val: 5
+      msg: Ihre Postleitzahl ist zu lang (max. 5 Zeichen).
+  ort:
+    format:
+      regex: ^[-A-Za-z\s\.\/{{diacritical}}]+$
+      msg: Ihr Ort enthält ungültige Zeichen.
+    required: Bitte geben Sie Ihren Ort ein.
+    max:
+      val: 30
+      msg: Ihr Ort ist zu lang (max. 30 Zeichen).
