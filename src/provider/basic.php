@@ -24,11 +24,11 @@ class basic {
         }
     }
 
-    public function dummy($e, $v, $vd, $opts = []) {
+    public function dummy() {
         return true;
     }
 
-    public function required($e, $v, $vd, $opts = []) {
+    public function required($v, $rule) {
         if (is_null($v)) {
             return "empty";
         }
@@ -93,36 +93,39 @@ class basic {
         return true;
     }
 
-    public function min($e, $v, $vd, $opts = []) {
-        $opts['minimum'] = $opts['val'];
-        return $this->v_length($e, $v, $vd, $opts);
-    }
+    public function min($v, $rule) {
+        if (!$v) return true;
 
-    public function js_min($e, $vd, $opts) {
-        return ['minlength', 'too-short', $opts['val']];
-    }
+        $val = $rule->val_int();
 
-    public function max($e, $v, $vd, $opts = []) {
-        if (!isset($opts['val'])) {
-            throw new \InvalidArgumentException(
-                sprintf('Missing max value on max validation')
-            );
+        $len = mb_strlen((string) $v, "utf-8");
+        if ($len < $val) {
+            return ['too-short', $val];
         }
-        $opts['maximum'] = $opts['val'];
-
-        return $this->v_length($e, $v, $vd, $opts);
+        return true;
     }
 
-    public function v_len($e, $v, $vd, $opts = []) {
+    public function max($v, $rule) {
+        if (!$v) return true;
+        $val = $rule->val_int();
+
+        $len = mb_strlen((string) $v, "utf-8");
+        if ($len > $val) {
+            return ['too-long', $val];
+        }
+        return true;
+    }
+
+    public function len($e, $v, $vd, $opts = []) {
         $opts['is'] = $opts['val'];
-        return $this->v_length($e, $v, $vd, $opts);
+        return $this->length($e, $v, $vd, $opts);
     }
 
     public function js_len($e, $vd, $opts) {
         return ['maxlength', 'wrong-length', $opts['val']];
     }
 
-    public function v_length($e, $v, $vd, $opts = []) {
+    public function length($e, $v, $vd, $opts = []) {
         if ($opts['allow_null'] ?? false && is_null($v)) {
             return true;
         }
@@ -245,13 +248,12 @@ class basic {
         return ['remote', 'taken', url($url)];
     }
 
-    public function format($e, $v, $vd, $opts = []) {
+    public function format($v, $rule) {
         if (!$v) {
             return true;
         }
 
-        $f = $opts['regex'];
-        // $f = str_replace('BOB_DIA_OK', BOB_DIA_OK, $f);
+        $f = $rule->val_string();
 
         if (!preg_match("/$f/", $v)) {
             return 'invalid';
@@ -267,41 +269,16 @@ class basic {
      *    Checks if email is like (anything-without-space)@(anything-without-space).(anything-without-space)
      *
      */
-    public function email($e, $v, $vd, $opts = []) {
-        $opts['regex'] = "^[^ ]+@[^ ]+\.[^ ]+$";
-        return $this->format($e, $v, $vd, $opts);
+    public function email($v, $rule) {
+        if (!$v) return true;
+        $test = "^[^ ]+@[^ ]+\.[^ ]+$";
+        if (!preg_match("/$test/", $v)) {
+            return 'invalid';
+        }
+        return true;
     }
 
-    public function js_email($e, $vd, $opts = []) {
-    }
 
-    public function v_plz($e, $v, $vd, $opts = []) {
-        $opts['regex'] = "^[0-9]{5}$";
-        return $this->v_format($e, $v, $vd, $opts);
-    }
-
-    public function js_plz($e, $vd, $opts) {
-        return ['plz', 'format', true];
-    }
-
-    public function v_konto($e, $v, $vd, $opts = []) {
-        $opts['regex'] = "^\d{2,10}$";
-        return $this->v_format($e, $v, $vd, $opts);
-    }
-
-    public function v_blz($e, $v, $vd, $opts = []) {
-        $opts['regex'] = "^\d{8}$";
-        return $this->v_format($e, $v, $vd, $opts);
-    }
-
-    public function v_iban($e, $v, $vd, $opts = []) {
-        $opts['regex'] = "^(DE|de)\d{20}$";
-        return $this->v_format($e, $v, $vd, $opts);
-    }
-
-    public function js_iban($e, $vd, $opts) {
-        return ['iban', 'invalid', $opts];
-    }
 
     public function v_number($e, $v, $vd, $opts = []) {
         if ($opts['allow_null'] && (is_null($v) || (is_string($v) && !trim($v)))) {

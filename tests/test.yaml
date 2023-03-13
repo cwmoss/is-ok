@@ -6,12 +6,12 @@ basic:
 
   email:
     required:
-    max:
-      val: 100
+    max: 20
     email:
 
 register:
   name:
+    label: Your Name
     required:
     max:
       val: 60

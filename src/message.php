@@ -4,6 +4,8 @@ namespace is_ok;
 
 class message {
 
+    public $generic = "Fehler für Eigenschaft {name} (Regel: {rule})";
+
     public array $msg = [
         'empty' => "{name} darf nicht leer sein",
         'blank' => "{name} darf nicht leer sein",
@@ -28,22 +30,30 @@ class message {
         'not-this-year' => '{name} muss in diesem Jahr liegen'
     ];
 
+    public function fallback($field, $rule) {
+        $msg = $this->get_message($rule->name, $field, $rule);
+        if (!$msg) {
+            $msg = $this->format_message($this->generic, ['name' => $field->name, 'rule' => $rule->name]);
+        }
+        return $msg;
+    }
 
-    public function get_message($default, $e, $opts, $vals = []) {
+    public function get_message($default, $field, $rule) {
         $replacements = [
-            'name' => $opts['name'] ?? null,
-            'yourval' => htmlspecialchars($opts['__'] ?? ''),
+            'name' => $field->label,
+            'yourval' => htmlspecialchars($rule->opts['val']['__'] ?? ''),
             'val' => ""
         ];
+        $vals = $rule->opts['val'] ?? null;
         if ($vals && !is_array($vals)) {
             $replacements['val'] = $vals;
         }
         if (!$replacements['name']) {
-            $replacements['name'] = ucfirst($e);
+            $replacements['name'] = ucfirst($field->name);
         }
-        $msg = $opts['msg_' . $default] ?? null;
+        $msg = $rule->opts['msg_' . $default] ?? null;
         if (!$msg) {
-            $msg = $opts['msg'] ?? null;
+            $msg = $rule->opts['msg'] ?? null;
         }
         if (!$msg) {
             $msg = $this->msg[$default] ?? '';
