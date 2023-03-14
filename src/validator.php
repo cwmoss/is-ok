@@ -35,13 +35,18 @@ class validator {
         array_unshift($this->providers, $provider);
     }
 
-    public function validate($data, $rules, $root = null) {
+    public function validate($data, $rules, $root = null, $context = []) {
+        // alternative signature: $data, $rules, $context
+        if (is_array($root)) {
+            $context = $root;
+            $root = null;
+        }
         $errors = [];
-        $data = new dotdata($data);
+        $data = new dotdata(['data' => $data, 'context' => $context]);
 
         foreach ($this->visit_fields($rules, $root) as [$field, $path]) {
             // [$field, $checks, $path]
-            $value = $data->get($path);
+            $value = $data->get($path, 'data');
             $errs = $this->validate_field($value, $data, $field, $path);
             if ($errs) {
                 // dbg("validate errs", $errs);
@@ -53,13 +58,13 @@ class validator {
     }
 
 
-    public function validate_field($value, $o, $field, $path) {
+    public function validate_field($value, $data, $field, $path) {
 
         if ($field->condition) {
             // TODO
             return [];
             // log_error("[V] e: $e, condition: {$checks['condition']}");
-            if (!evaluator::check($checks['condition'], $o, $e)) {
+            if (!evaluator::check($checks['condition'], $data, $e)) {
                 return [];
             } else {
                 unset($checks['condition']);
@@ -78,7 +83,7 @@ class validator {
             // einzelcheck kann auch an eine condition gebunden sein
             if ($opts['condition'] ?? false) {
                 // log_error("[V] e: $e, condition singlecheck: {$opts['condition']}");
-                if (!evaluator::check($opts['condition'], $o, $e)) {
+                if (!evaluator::check($opts['condition'], $data, $e)) {
                     // log_error("[V] condition singlecheck FAILED ==> SKIP");
                     continue;
                 } else {
@@ -86,7 +91,7 @@ class validator {
                 }
             }
 
-            $errs = $this->validate_rule($rule, $value, $o, $field, $path);
+            $errs = $this->validate_rule($rule, $value, $data, $field, $path);
             if ($errs) {
                 // $errors[] = array_merge($errors, $errs);
                 array_push($errors, ...$errs);
@@ -100,7 +105,7 @@ class validator {
         return $errors;
     }
 
-    public function validate_rule($rule, $value, $o, $field, $path) {
+    public function validate_rule($rule, $value, $data, $field, $path) {
         $errors = [];
 
         // TODO (or not?)
@@ -112,7 +117,7 @@ class validator {
 
         $meth = $rule->name;
 
-        $err = call_user_func_array([$this, $meth], [$value, $rule, $o, $path]);
+        $err = call_user_func_array([$this, $meth], [$value, $rule, $data, $path]);
 
         if ($err === true) {
             // dbg("[V] OK", $e, $value);
@@ -235,5 +240,16 @@ class validator {
             return $this->call_js_message($method, $parms);
         }
         return $this->call_validation($method, $parms);
+    }
+
+    public static function array_is_list(array $array): bool {
+        $i = -1;
+        foreach ($array as $k => $v) {
+            ++$i;
+            if ($k !== $i) {
+                return false;
+            }
+        }
+        return true;
     }
 }

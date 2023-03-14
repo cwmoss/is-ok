@@ -9,10 +9,14 @@ class dotdata {
     ) {
     }
 
-    function get($path) {
+    function get($path, $start = null, $default = null) {
 
         if (!is_array($path)) {
             $path = explode('.', $path);
+        }
+
+        if ($start) {
+            array_unshift($path, $start);
         }
         $current = $this->data;
         $current_path = [];
@@ -25,7 +29,7 @@ class dotdata {
             } elseif (is_object($current) && isset($current->$part)) {
                 $current = $current->$part;
             } else {
-                return null;
+                return $default;
             }
         }
         return $current;

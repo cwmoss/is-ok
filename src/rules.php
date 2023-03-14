@@ -2,6 +2,8 @@
 
 namespace is_ok;
 
+use function PHPUnit\Framework\isList;
+
 class rules {
 
     public array $sets;
@@ -62,6 +64,8 @@ class rules {
             } else {
                 $opts = ['msg' => $opts];
             }
+        } elseif (is_array($opts) && validator::array_is_list($opts)) {
+            $opts = ['val' => $opts];
         }
 
         // $opts = self::rewrite_messages($opts);
