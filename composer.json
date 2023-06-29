@@ -17,6 +17,6 @@
         }
     ],
     "require": {
-        "symfony/yaml": "^6"
+        "symfony/yaml": "^5 | ^6"
     }
 }
