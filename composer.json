@@ -1,5 +1,5 @@
 {
-    "name": "cwmoss/is_ok",
+    "name": "cwmoss/is-ok",
     "description": "validation lib",
     "type": "library",
     "require-dev": {
