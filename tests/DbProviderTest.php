@@ -39,7 +39,7 @@ final class DbProviderTest extends TestCase {
         $this->pdo->exec("INSERT INTO users (name) VALUES('hansi')");
         $errors = $this->ok->validate($t, $rules);
         $this->assertCount(1, $errors);
-        $this->assertEquals('Username ist bereits in Benutzung', $errors[0]->message);
+        $this->assertEquals('Username ist bereits in Benutzung.', $errors[0]->message);
 
         $rules = new rules(['username' => 'required|unique:table=users,column=name,ignore_id=context.user_id']);
         $errors = $this->ok->validate($t, $rules);

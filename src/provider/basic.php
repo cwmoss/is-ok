@@ -2,6 +2,8 @@
 
 namespace is_ok\provider;
 
+use function dbg;
+
 class basic {
     public function method($e, $v, $vd, $opts = []) {
         if (!$v) {
@@ -30,25 +32,22 @@ class basic {
 
     public function required($v, $rule) {
         if (is_null($v)) {
-            return "empty";
+            return false;
         }
 
         if (is_array($v)) {
             if ($v) {
                 return true;
             }
-            return 'empty';
+            return false;
         }
 
         if (!trim($v) && trim($v) !== "0") {
-            return 'empty';
+            return false;
         }
         return true;
     }
 
-    public function js_mand($e, $vd, $opts) {
-        return ['required', 'empty', true];
-    }
 
     public function v_inlist($e, $v, $vd, $opts = array()) {
         // wir sind hier sehr lasch und erlauben null/ ""/ 0
@@ -116,9 +115,27 @@ class basic {
         return true;
     }
 
-    public function len($e, $v, $vd, $opts = []) {
-        $opts['is'] = $opts['val'];
-        return $this->length($e, $v, $vd, $opts);
+    public function len($v, $rule) {
+        if (!$v) return true;
+        $v = (string) $v;
+        $len = mb_strlen($v, "utf-8");
+
+        $is = $rule->val_int('val', true) ?: $rule->val_int('is', true);
+        if (!is_null($is) && $len != $is) {
+            return ['wrong-length', $is];
+        }
+
+        $min = $rule->val_int('min', true);
+        if (!is_null($min) && $len < $min) {
+            return ['too-short', $min];
+        }
+
+        $max = $rule->val_int('max', true);
+        if (!is_null($max) && $len > $max) {
+            return ['too-long', $max];
+        }
+
+        return true;
     }
 
     public function js_len($e, $vd, $opts) {
@@ -162,71 +179,34 @@ class basic {
         return ['maxlength', 'too-long', $opts['maximum']];
     }
 
-    public function confirm($e, $v, $vd, $opts = []) {
+    // TODO: handle subpath to => address.plz_confirm
+    public function confirmed($v, $rule, $data, $path) {
         if (!$v) {
             return true;
         }
-        dbg("++ confirm validation", $e, $v);
-        // rule on src element
-
-        if (!preg_match("/Confirmation$/", $e)) {
-            $src = $e;
-            $confirm = $e . "Confirmation";
-            $vgl = $confirm;
-
-            // rule explicit defined on *Confirmation element
+        if (isset($rule->opts['to'])) {
+            $field = $data->path_update($path, $rule->opts['to']);
         } else {
-            $src = str_replace('Confirmation', '', $e);
-            $confirm = $e;
-            $vgl = $src;
+            $field = $data->path_suffix($path, '_confirmation');
         }
-        $v2 = $vd->get($vgl);
-        if (is_null($v2)) {
-            return true;
-        }
-        dbg("++ confirm v1 vs v2 (src confirm)", $v, $v2, $src, $confirm, $e);
 
-        // fehler immer an das _confirmationfeld hängen
+        $v2 = $data->get($field, 'data');
+        // var_dump($v, $v2, $path, $field, $data);
+
         if ($v != $v2) {
-            //return new error($confirm, $vd->get_message('confirmation', $src, $opts));
-            return 'confirmation';
+            return 'confirmed';
         }
         return true;
     }
 
-    public function js_confirm($e, $name, $opts) {
-        // rule on src element
-        if (!preg_match("/_confirmation$/", $e)) {
-            $src = $e;
-            $confirm = $e . "_confirmation";
-            $vgl = $confirm;
-            return ["equalTo:{$e}_confirmation", 'confirmation', "#{$e}"];
-
-            // rule explicit defined on _confirmation element
-        } else {
-            $src = str_replace('_confirmation', '', $e);
-            $confirm = $e;
-            $vgl = $src;
-            return ["equalTo", 'confirmation', "#{$src}"];
-        }
-    }
-
-    public function v_accept($e, $v, $vd, $opts = []) {
-        if (is_null($v)) {
-            return true;
-        }
-        if (!$opts['accept']) {
-            $opts['accept'] = 1;
-        }
-        if ($v != $opts['accept']) {
+    // The field under validation must be "yes", "on", 1, or true.
+    public function accepted($v) {
+        if (!in_array($v, ['yes', 'on', 1, true])) {
             return 'accepted';
         }
         return true;
     }
 
-    public function js_accept($e, $vd, $opts) {
-        return ['acceptcheckbox', 'accepted', true];
-    }
 
     public function v_unique($e, $v, $vd, $opts = []) {
         if (!$v) {
@@ -352,17 +332,9 @@ class basic {
      *   quasi das gegenteil von mandatory
      *
      */
-    public function empty($e, $v, $vd, $opts = []) {
-        if ($v) {
-            return new error($e, $opts['msg']);
-        }
-        return true;
+    public function empty($v) {
+        return (!$v);
     }
-
-
-
-
-
 
     public function v_nonconfirm($e, $v, $vd, $opts = []) {
         $field = $opts['field'];
@@ -404,12 +376,5 @@ class basic {
             }
         }
         return true;
-    }
-
-
-
-    public function v_fulleuro($e, $v, $vd, $opts = []) {
-        $opts['regex'] = "^[\d]+$";
-        return $this->v_format($e, $v, $vd, $opts);
     }
 }

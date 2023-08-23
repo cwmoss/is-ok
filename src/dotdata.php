@@ -34,4 +34,17 @@ class dotdata {
         }
         return $current;
     }
+
+    /*
+        adress.plz, plz2 => address.plz2
+    */
+    function path_update($current_path, $new_end) {
+        $path = explode('.', $current_path);
+        $path[array_key_last($path)] = $new_end;
+        return join('.', $path);
+    }
+
+    function path_suffix($current_path, $suffix) {
+        return $current_path . $suffix;
+    }
 }

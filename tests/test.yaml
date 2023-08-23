@@ -24,6 +24,16 @@ register:
 
   address: address
 
+confirm:
+  plz_optional:
+    confirmed:
+  plz:
+    required:
+    confirmed:
+  plz_different_fieldname:
+    confirmed:
+      to: plz2
+
 address:
   strasse:
     required: Bitte geben Sie Ihre Straße ein.
