@@ -16,7 +16,7 @@ class database {
         if (!$v) {
             return true;
         }
-        $checks = $rule->val_hash();
+        $checks = $rule->parameter_hash();
 
         $test = ['test' => $v];
 
@@ -65,7 +65,7 @@ class database {
         if (!$v) {
             return true;
         }
-        $checks = $rule->val_hash();
+        $checks = $rule->parameter_hash();
 
         $test = ['test' => $v];
         $query = sprintf(

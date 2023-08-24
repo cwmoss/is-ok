@@ -48,54 +48,10 @@ class basic {
         return true;
     }
 
-
-    public function v_inlist($e, $v, $vd, $opts = array()) {
-        // wir sind hier sehr lasch und erlauben null/ ""/ 0
-        //    falls unerwünscht -- mand check setzen
-        if (!$v) {
-            return true;
-        }
-        $list = $opts['func'] ?? null;
-        if ($list) {
-            if (str_contains($list, '::')) {
-                $list = explode('::', $list);
-                $list = call_user_func_array(array($list[0], trim($list[1], '()')), array($e));
-                $list = array_keys($list);
-            } else {
-                [$ctxobj, $meth] = explode('#', $list);
-                $obj = $vd->context[$ctxobj];
-                $list = call_user_func_array(array($obj, trim($meth, '()')), array($e));
-                $list = array_keys($list);
-            }
-        } else {
-            $list = $opts['list'];
-        }
-
-        $opts['in'] = $list;
-        # TODO
-        $opts['between'] = null;
-        if (
-            $opts['exclude'] == 1 &&
-            ($opts['in'] && in_array($v, $opts['in'])) ||
-            ($opts['between'] && ($v >= $opts['between'][0] && $v <= $opts['between'][1]))
-        ) {
-            return ['exclusion', $opts['between']];
-        } else {
-            if (
-                !$opts['exclude'] &&
-                ($opts['in'] && !in_array($v, $opts['in'])) ||
-                ($opts['between'] && ($v < $opts['between'][0] || $v > $opts['between'][1]))
-            ) {
-                return 'inclusion';
-            }
-        }
-        return true;
-    }
-
     public function min($v, $rule) {
         if (!$v) return true;
 
-        $val = $rule->val_int();
+        $val = $rule->parameter_int();
 
         $len = mb_strlen((string) $v, "utf-8");
         if ($len < $val) {
@@ -106,7 +62,7 @@ class basic {
 
     public function max($v, $rule) {
         if (!$v) return true;
-        $val = $rule->val_int();
+        $val = $rule->parameter_int();
 
         $len = mb_strlen((string) $v, "utf-8");
         if ($len > $val) {
@@ -120,63 +76,22 @@ class basic {
         $v = (string) $v;
         $len = mb_strlen($v, "utf-8");
 
-        $is = $rule->val_int('val', true) ?: $rule->val_int('is', true);
+        $is = $rule->parameter_int('val', true) ?: $rule->parameter_int('is', true);
         if (!is_null($is) && $len != $is) {
             return ['wrong-length', $is];
         }
 
-        $min = $rule->val_int('min', true);
+        $min = $rule->parameter_int('min', true);
         if (!is_null($min) && $len < $min) {
             return ['too-short', $min];
         }
 
-        $max = $rule->val_int('max', true);
+        $max = $rule->parameter_int('max', true);
         if (!is_null($max) && $len > $max) {
             return ['too-long', $max];
         }
 
         return true;
-    }
-
-    public function js_len($e, $vd, $opts) {
-        return ['maxlength', 'wrong-length', $opts['val']];
-    }
-
-    public function length($e, $v, $vd, $opts = []) {
-        if ($opts['allow_null'] ?? false && is_null($v)) {
-            return true;
-        }
-        $v = (string) $v;
-        if (function_exists('mb_strlen')) {
-            $v = str_replace("\r\n", "\n", $v);
-            $v = str_replace("\r", "\n", $v);
-            $len = mb_strlen($v, "utf-8");
-        } else {
-            $len = strlen($v);
-        }
-        $min = $max = null;
-        if (isset($opts['between'])) {
-            list($min, $max) = $opts['between'];
-        }
-        if (isset($opts['maximum'])) {
-            $max = $opts['maximum'];
-        }
-        if (isset($opts['minimum'])) {
-            $min = $opts['minimum'];
-        }
-
-        if (isset($opts['is']) && $len != $opts['is']) {
-            return array('wrong-length', $opts['is']);
-        } elseif (!is_null($min) && ($len < $min || is_null($v))) {
-            return array('too-short', $opts['minimum']);
-        } elseif (!is_null($max) && ($len > $max || is_null($v))) {
-            return array('too-long', $opts['maximum']);
-        }
-        return true;
-    }
-
-    public function js_length($e, $name, $opts) {
-        return ['maxlength', 'too-long', $opts['maximum']];
     }
 
     // TODO: handle subpath to => address.plz_confirm
@@ -207,25 +122,20 @@ class basic {
         return true;
     }
 
-
-    public function v_unique($e, $v, $vd, $opts = []) {
+    public function inlist($v, $rule, $data) {
+        // wir sind hier sehr lasch und erlauben null/ ""/ 0
+        //    falls unerwünscht -- mand check setzen
         if (!$v) {
             return true;
         }
 
-        $unique = $vd->is_unique($v, $e);
-        if (!$unique) {
-            return 'taken';
+        $list = $rule->parameter();
+        if (is_string($list)) {
+            $list = $data->get_call($list);
         }
+        if (!is_array($list)) return 'inclusion';
+        if (!in_array($v, $list)) return 'inclusion';
         return true;
-    }
-
-    public function js_unique($e, $vd, $opts = []) {
-        $url = $opts['url'];
-        if (!$url) {
-            return false;
-        }
-        return ['remote', 'taken', url($url)];
     }
 
     public function format($v, $rule) {
@@ -233,16 +143,12 @@ class basic {
             return true;
         }
 
-        $f = $rule->val_string();
+        $f = $rule->parameter_string();
 
-        if (!preg_match("/$f/", $v)) {
+        if (!preg_match("$f", $v)) {
             return 'invalid';
         }
         return true;
-    }
-
-    public function js_format($e, $vd, $opts = []) {
-        return ['format', 'invalid', $opts['regex']];
     }
 
     /**
@@ -259,72 +165,64 @@ class basic {
     }
 
 
+    public function numeric($v) {
+        if (is_null($v)) return true;
 
-    public function v_number($e, $v, $vd, $opts = []) {
-        if ($opts['allow_null'] && (is_null($v) || (is_string($v) && !trim($v)))) {
-            return true;
-        }
-
-        $opts['modify_before_check'] = 'to_float';
-        if ($opts['modify_before_check']) {
-            $func = $opts['modify_before_check'];
-            $v = $func($v);
-        }
-
-        if (!is_numeric($v) || ($opts['only_integer'] && (is_float($v) || !preg_match("/^[-+]?\d+$/", $v)))) {
+        if (!is_numeric($v)) {
             return 'not_a_number';
         }
+        return true;
     }
 
-    public function v_minval($e, $v, $vd, $opts = []) {
-        if ($v === "") {
-            return true;
+    public function integer($v, $rule) {
+        if (is_null($v)) return true;
+
+        // if (filter_var($int, FILTER_VALIDATE_INT, array("options" => array("min_range" => $min, "max_range" => $max))) === false) {
+        if (filter_var($v, FILTER_VALIDATE_INT) === false) {
+            return 'integer';
         }
-        $min = $opts['val'];
-        if ($opts['compare_float']) {
-            $min = $this->_to_float($min);
-            $v = $this->_to_float($v);
+        $v = (int) $v;
+        $is = $rule->parameter_int('val', true) ?: $rule->parameter_int('is', true);
+        if (!is_null($is) && $is != $v) {
+            return 'integer-wrong-value';
         }
-        if ($v < $min) {
-            return ['min', $min];
+        $min = $rule->parameter_int('min', true);
+        $max = $rule->parameter_int('max', true);
+        if (!is_null($min) && !is_null($max) && (($v < $min) || ($v > $max))) {
+            return 'integer-not-between';
+        }
+        if (!is_null($min) && is_null($max) && ($v < $min)) {
+            return 'integer-too-small';
+        }
+        if (is_null($min) && !is_null($max) && ($v > $max)) {
+            return 'integer-too-big';
         }
         return true;
     }
 
-    public function js_minval($e, $vd, $opts) {
-        if ($opts['compare_float']) {
-            return ['min_de', 'invalid', $opts['val']];
-        }
-        return ['min', 'invalid', $opts['val']];
-    }
+    public function decimal($v, $rule) {
+        if (is_null($v)) return true;
 
-    public function v_maxval($e, $v, $vd, $opts = []) {
-        if ($v === "") {
-            return true;
+        if (!is_numeric($v)) {
+            return 'not_a_number';
         }
-        $max = $opts['val'];
-        if ($opts['compare_float']) {
-            $max = $this->_to_float($max);
-            $v = $this->_to_float($v);
+
+        $number_of_decimals = $rule->parameter_int();
+
+        $matches = [];
+
+        if (preg_match('/^[+-]?\d*\.?(\d*)$/', $v, $matches) !== 1) {
+            return false;
         }
-        // log_error("maxval {$v} vs {$max}");
-        if ($v > $max) {
-            return ['max', $max];
-        }
-        return true;
+
+        $decimals = strlen(end($matches));
+        return $decimals == $number_of_decimals;
     }
 
     public function _to_float($de_str) {
         $norm = str_replace(",", ".", $de_str);
         $norm = ((float) $norm);
         return $norm;
-    }
-
-    public function js_maxval($e, $vd, $opts) {
-        if ($opts['compare_float']) {
-            return ['max_de', 'invalid', $opts['val']];
-        }
-        return ['max', 'invalid', $opts['val']];
     }
 
     /**

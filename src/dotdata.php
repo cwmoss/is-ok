@@ -35,6 +35,14 @@ class dotdata {
         return $current;
     }
 
+    function get_call($path, $start = null) {
+        $val = $this->get($path, $start);
+        if (is_callable($val)) {
+            $val = $val();
+        }
+        return $val;
+    }
+
     /*
         adress.plz, plz2 => address.plz2
     */

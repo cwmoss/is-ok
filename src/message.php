@@ -9,14 +9,20 @@ class message {
     public array $msg = [
         'required' => "{name} darf nicht leer sein.",
         'empty' => "{name} muß leer sein.",
-        'min' => '{name} ist zu klein (min. {val}).',
-        'max' => '{name} ist zu groß (max. {val}).',
+        'min' => '{name} ist zu kurz (min. {val}).',
+        'max' => '{name} ist zu lang (max. {val}).',
         'taken' => "{name} ist bereits in Benutzung.",
         'invalid' => "{name} ist ungültig.",
         'too-long' => "{name} ist zu lang (maximal {val} Zeichen).",
         'too-short' => "{name} ist zu kurz (mind. {val} Zeichen).",
         'wrong-length' => "{name} hat die falsche Länge. (sollen {val} zeichen sein).",
         'not-a-number' => "{name} ist keine Zahl.",
+        'integer' => "{name} ist keine ganze Zahl.",
+        'integer-wrong-value' => "{name} muss {val} sein.",
+        'integer-too-small' => "{name} muss größer gleich {min} sein.",
+        'integer-too-big' => "{name} muss kleiner gleich {max} sein.",
+        'integer-not-between' => "{name} muss zwischen {min} und {max} sein.",
+        'decimal' => "{name} muss {val} Nachkommastellen haben.",
         'accepted' => "{name} muß zugestimmt werden.",
         'inclusion' => "{name} ist nicht in der Liste der erlaubten Werte.",
         'exclusion' => "{name} ist reserviert.",
@@ -44,6 +50,8 @@ class message {
             'yourval' => htmlspecialchars($rule->opts['val']['__'] ?? ''),
             'val' => ""
         ];
+        $replacements += $rule->opts;
+
         $vals = $rule->opts['val'] ?? null;
         if ($vals && !is_array($vals)) {
             $replacements['val'] = $vals;

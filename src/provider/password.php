@@ -9,7 +9,7 @@ class password {
         if (!$v) {
             return true;
         }
-        $checks = $rule->val_hash();
+        $checks = $rule->parameter_hash();
 
         foreach ($checks as $r => $ropts) {
             if (!$this->$r($v, $ropts)) {

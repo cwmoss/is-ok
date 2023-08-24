@@ -230,5 +230,257 @@ final class BasicProviderTest extends TestCase {
             1,
             $errors
         );
+        $rules = new is_ok\rules([
+            'plz' => 'len:min=3,max=5'
+        ]);
+        $data = ['plz' => '1234'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+        $data = ['plz' => '123'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+        $data = ['plz' => '12'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $data = ['plz' => '123456'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+    }
+
+    function testInlist(): void {
+        $rules = new is_ok\rules([
+            'number' => 'inlist:context.happy'
+        ]);
+        $data = ['number' => '1234'];
+        $errors = $this->ok->validate($data, $rules, ['happy' => ['333', '555']]);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $data = ['number' => '555'];
+        $errors = $this->ok->validate($data, $rules, ['happy' => ['333', '555']]);
+        $this->assertCount(
+            0,
+            $errors
+        );
+        $data = ['number' => '1234'];
+        $errors = $this->ok->validate($data, $rules, ['happy' => fn () => range(55, 66)]);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $data = ['number' => '55'];
+        $errors = $this->ok->validate($data, $rules, ['happy' => fn () => range(55, 66)]);
+        $this->assertCount(
+            0,
+            $errors
+        );
+    }
+
+    function testFormat(): void {
+        $rules = new is_ok\rules([
+            'invoice_number' => 'format:/^inv_/i'
+        ]);
+        $data = ['invoice_number' => '1234'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $data = ['invoice_number' => 'inv_123'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+        $data = ['invoice_number' => 'INV_123'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+    }
+
+    function testDecimal(): void {
+        $rules = new is_ok\rules([
+            'price' => 'decimal:2'
+        ]);
+        $data = ['price' => '18.2'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $this->assertSame($errors[0]->message, 'Price muss 2 Nachkommastellen haben.');
+        $data = ['price' => '18.20'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+    }
+
+    function testNumeric(): void {
+        $rules = new is_ok\rules([
+            'age' => 'numeric'
+        ]);
+        $data = ['age' => 'plus18'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $data = ['age' => '1856'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+        $data = ['age' => '18.75'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+    }
+
+    function testInteger(): void {
+        $rules = new is_ok\rules([
+            'age' => 'integer'
+        ]);
+        $data = ['age' => 'plus18'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $this->assertSame($errors[0]->message, 'Age ist keine ganze Zahl.');
+        $data = ['age' => '1856'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+        $rules = new is_ok\rules([
+            'age' => 'integer:22'
+        ]);
+        $data = ['age' => '1856'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $this->assertSame($errors[0]->message, 'Age muss 22 sein.');
+
+        $data = ['age' => '22'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+
+        $rules = new is_ok\rules([
+            'age' => 'integer:min=18'
+        ]);
+        $data = ['age' => '16'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $this->assertSame($errors[0]->message, 'Age muss größer gleich 18 sein.');
+
+        $data = ['age' => '18'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+
+        $rules = new is_ok\rules([
+            'age' => 'integer:max=26'
+        ]);
+        $data = ['age' => '35'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $this->assertSame($errors[0]->message, 'Age muss kleiner gleich 26 sein.');
+
+        $data = ['age' => '18'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+
+        $rules = new is_ok\rules([
+            'age' => 'integer:min=18,max=26'
+        ]);
+        $data = ['age' => '35'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $this->assertSame($errors[0]->message, 'Age muss zwischen 18 und 26 sein.');
+
+        $data = ['age' => '16'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $this->assertSame($errors[0]->message, 'Age muss zwischen 18 und 26 sein.');
+
+        $data = ['age' => '26'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
+    }
+
+    function testEmail(): void {
+        $rules = new is_ok\rules([
+            'email' => 'email'
+        ]);
+        $data = ['email' => 'harry'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $data = ['email' => 'harry@'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $data = ['email' => 'harry@de'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            1,
+            $errors
+        );
+        $data = ['email' => 'harry@20sec.net'];
+        $errors = $this->ok->validate($data, $rules);
+        $this->assertCount(
+            0,
+            $errors
+        );
     }
 }
